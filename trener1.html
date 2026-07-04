@@ -211,6 +211,34 @@
   .hcell.one{ background: var(--amber-dim); border-color: var(--amber); }
   .hcell.today-marker{ outline: 1.5px solid var(--coral); outline-offset: 1px; }
 
+  /* ===== MISSED DAYS ===== */
+  .missed-section{ margin-bottom: 18px; }
+  .missed-day{
+    background: rgba(255,107,94,.06); border: 1px solid rgba(255,107,94,.25);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; animation: fadeIn .3s;
+  }
+  .missed-day-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 8px;
+  }
+  .missed-day-date{
+    font-family:'Consolas','Courier New',monospace; font-size: 12px;
+    color: var(--coral); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .missed-badge{
+    font-family:'Consolas','Courier New',monospace; font-size: 10px;
+    background: rgba(255,107,94,.15); border: 1px solid var(--coral);
+    color: var(--coral); border-radius: 8px; padding: 2px 8px;
+  }
+  .missed-items{ display:flex; flex-wrap:wrap; gap: 6px; }
+  .missed-item{
+    font-size: 12.5px; padding: 4px 10px; border-radius: 6px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  }
+  .missed-item.study-item{ border-color: rgba(255,176,0,.3); color: var(--amber); }
+  .missed-item.workout-item{ border-color: rgba(177,140,255,.3); color: var(--violet); }
+  @keyframes fadeIn{ from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
   .loading-note{ font-family:'Consolas','Courier New',monospace; font-size: 12px; color: var(--muted); text-align:center; padding: 30px 0; }
 
   /* ===== ALARM TAB ===== */
@@ -2094,6 +2122,13 @@ function renderToday(){
 
   html += '</div>';
 
+  // === ПРОПУЩЕНІ ДНІ ===
+  const missedHtml = buildMissedSection(now);
+  if(missedHtml){
+    html += '<div class="panel-title" style="color:var(--coral)">⚠ Пропущено за останні 7 днів</div>';
+    html += '<div class="missed-section">' + missedHtml + '</div>';
+  }
+
   html += '<div class="panel-title">Розклад на найближчі 7 днів</div>';
   html += '<div class="week-grid">';
   for(let i=0;i<7;i++){
@@ -2142,6 +2177,66 @@ function bindQotdEvents(qotd){
     });
     optsWrap.appendChild(btn);
   });
+}
+
+function buildMissedSection(now){
+  const DAYS_UA = ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MONTHS_UA = ['січня','лютого','березня','квітня','травня','червня',
+                     'липня','серпня','вересня','жовтня','листопада','грудня'];
+  let html = '';
+
+  // Перевіряємо останні 7 днів (виключаючи сьогодні)
+  for(let i=1; i<=7; i++){
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = dateKey(d);
+    const sched = getScheduleForDate(d);
+    const entry = history[key];
+
+    // Що мало бути зроблено цього дня
+    const requiredStudy = (sched.study || []).filter(s => s !== 'review');
+    const requiredWorkout = sched.workout && !sched.buffer;
+
+    if(!requiredStudy.length && !requiredWorkout) continue; // вихідний чи буфер — не рахуємо
+    if(sched.buffer) continue;
+
+    // Що НЕ було зроблено
+    const doneStudy = entry ? (entry.study || []) : [];
+    const doneWorkout = entry ? entry.workout : false;
+    const excused = entry ? entry.excused : false;
+
+    if(excused) continue; // день був відмічений "не встиг" — не показуємо
+
+    const missedStudy = requiredStudy.filter(sk => !doneStudy.includes(sk));
+    const missedWorkout = requiredWorkout && !doneWorkout;
+
+    if(!missedStudy.length && !missedWorkout) continue; // все зроблено — ок
+
+    // Є пропуски — будуємо картку
+    const dayName = DAYS_UA[d.getDay()];
+    const dateStr = `${d.getDate()} ${MONTHS_UA[d.getMonth()]}`;
+    const missedCount = missedStudy.length + (missedWorkout ? 1 : 0);
+
+    html += `<div class="missed-day">`;
+    html += `<div class="missed-day-head">`;
+    html += `<span class="missed-day-date">${dayName} · ${dateStr}</span>`;
+    html += `<span class="missed-badge">${missedCount} не виконано</span>`;
+    html += `</div>`;
+    html += `<div class="missed-items">`;
+
+    missedStudy.forEach(sk => {
+      const name = SUBJECTS[sk] ? SUBJECTS[sk].name : sk;
+      html += `<span class="missed-item study-item">📘 ${name}</span>`;
+    });
+    if(missedWorkout){
+      html += `<span class="missed-item workout-item">💪 Тренування</span>`;
+    }
+
+    html += `</div>`;
+    html += `</div>`;
+  }
+
+  return html;
 }
 
 function weekRowHtml(d, isToday){

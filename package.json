@@ -1,6 +1,6 @@
 {
   "name": "trener-exe",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Трекер підготовки до вступу",
   "main": "main.js",
   "scripts": {
