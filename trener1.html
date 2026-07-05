@@ -211,34 +211,27 @@
   .hcell.one{ background: var(--amber-dim); border-color: var(--amber); }
   .hcell.today-marker{ outline: 1.5px solid var(--coral); outline-offset: 1px; }
 
-  /* ===== MISSED DAYS ===== */
-  .missed-section{ margin-bottom: 18px; }
-  .missed-day{
-    background: rgba(255,107,94,.06); border: 1px solid rgba(255,107,94,.25);
-    border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; animation: fadeIn .3s;
-  }
-  .missed-day-head{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom: 8px;
-  }
-  .missed-day-date{
-    font-family:'Consolas','Courier New',monospace; font-size: 12px;
-    color: var(--coral); text-transform: uppercase; letter-spacing: .06em;
-  }
-  .missed-badge{
-    font-family:'Consolas','Courier New',monospace; font-size: 10px;
-    background: rgba(255,107,94,.15); border: 1px solid var(--coral);
-    color: var(--coral); border-radius: 8px; padding: 2px 8px;
-  }
-  .missed-items{ display:flex; flex-wrap:wrap; gap: 6px; }
-  .missed-item{
-    font-size: 12.5px; padding: 4px 10px; border-radius: 6px;
-    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
-  }
-  .missed-item.study-item{ border-color: rgba(255,176,0,.3); color: var(--amber); }
-  .missed-item.workout-item{ border-color: rgba(177,140,255,.3); color: var(--violet); }
-  @keyframes fadeIn{ from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
-
+  .missed-section{ margin-bottom:18px; }
+  .missed-day{ background:rgba(255,107,94,.06); border:1px solid rgba(255,107,94,.25); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .missed-day-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .missed-day-date{ font-family:'Consolas','Courier New',monospace; font-size:12px; color:var(--coral); text-transform:uppercase; letter-spacing:.06em; }
+  .missed-badge{ font-family:'Consolas','Courier New',monospace; font-size:10px; background:rgba(255,107,94,.15); border:1px solid var(--coral); color:var(--coral); border-radius:8px; padding:2px 8px; }
+  .missed-items{ display:flex; flex-wrap:wrap; gap:6px; }
+  .missed-item{ font-size:12.5px; padding:4px 10px; border-radius:6px; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); }
+  .missed-item.study-item{ border-color:rgba(255,176,0,.3); color:var(--amber); }
+  .missed-item.workout-item{ border-color:rgba(177,140,255,.3); color:var(--violet); }
+  .confirm-overlay{ position:fixed; inset:0; background:rgba(4,6,12,.97); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+  .confirm-overlay.show{ display:flex; }
+  .confirm-card{ background:var(--panel); border:2px solid var(--coral); border-radius:14px; padding:28px 24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 50px rgba(255,107,94,.3); pointer-events:all; }
+  .confirm-card h3{ font-family:'Consolas','Courier New',monospace; color:var(--coral); font-size:16px; margin:0 0 8px; }
+  .confirm-card p{ font-size:13px; color:var(--muted); margin:0 0 20px; line-height:1.6; }
+  .confirm-btn-row{ display:flex; gap:10px; }
+  .confirm-yes{ flex:1; padding:13px; border-radius:8px; border:2px solid var(--coral); background:rgba(255,107,94,.2); color:var(--coral); font-family:'Consolas','Courier New',monospace; font-size:14px; font-weight:700; cursor:pointer; pointer-events:all; }
+  .confirm-yes:hover{ background:rgba(255,107,94,.4); }
+  .confirm-no{ flex:1; padding:13px; border-radius:8px; border:2px solid var(--line); background:var(--panel-2); color:var(--text); font-family:'Consolas','Courier New',monospace; font-size:14px; cursor:pointer; pointer-events:all; }
+  .confirm-no:hover{ border-color:var(--teal); color:var(--teal); }
+  .reset-btn{ width:100%; margin-top:12px; padding:10px; border-radius:8px; border:1px solid rgba(255,107,94,.4); background:transparent; color:rgba(255,107,94,.7); font-family:'Consolas','Courier New',monospace; font-size:11px; cursor:pointer; }
+  .reset-btn:hover{ border-color:var(--coral); color:var(--coral); background:rgba(255,107,94,.08); }
   .loading-note{ font-family:'Consolas','Courier New',monospace; font-size: 12px; color: var(--muted); text-align:center; padding: 30px 0; }
 
   /* ===== ALARM TAB ===== */
@@ -897,6 +890,7 @@
         </div>
         <div class="toggle-switch" id="sfxToggle" role="switch" title="Увімкнути/вимкнути звуки"></div>
       </div>
+      <button class="reset-btn" id="resetProgressBtn">🗑 Скинути весь прогрес (почати з нуля)</button>
     </div>
     <div class="side-section">
       <button class="rating-btn" id="openRatingBtn"><span>🏁 Рейтинг з друзями</span><span>→</span></button>
@@ -1037,6 +1031,17 @@
 </div>
 
 <script>
+/* ====================================================================
+   ЗАПАСНИЙ СПОСІБ СКИНУТИ ВСЕ: якщо кнопка в застосунку колись не спрацює,
+   допиши #reset в кінець адреси файлу і натисни Enter — це очистить усе
+   і перезавантажить сторінку з чистого аркуша, незалежно від решти коду.
+==================================================================== */
+if(location.hash === '#reset'){
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  location.replace(location.href.split('#')[0]);
+}
+
 /* ====================================================================
    DATA
 ==================================================================== */
@@ -1416,7 +1421,16 @@ const WORKOUT = [
   { text: 'Підйом кисті вгору, вага 5кг (обидві руки)', reps: '×20' },
   { text: 'Прес звичайний', reps: '×20' },
   { text: 'Прес наліво', reps: '×20' },
-  { text: 'Прес направо', reps: '×20' }
+  { text: 'Прес направо', reps: '×20' },
+  { text: 'Присідання класичні', reps: '×25' },
+  { text: 'Присідання сумо (широка стійка)', reps: '×20' },
+  { text: 'Випади вперед (права нога)', reps: '×15' },
+  { text: 'Випади вперед (ліва нога)', reps: '×15' },
+  { text: 'Підйом на носочки', reps: '×25' },
+  { text: 'Сідничний міст (лежачи на спині)', reps: '×20' },
+  { text: '"Човник"/гіперекстензія лежачи на животі (руки і ноги вгору по черзі)', reps: '×15' },
+  { text: '"Супермен" — статична затримка лежачи на животі', reps: '×20с ×3' },
+  { text: 'Зворотні "снігові ангели" лежачи на животі (руки з підлоги розводимо назад)', reps: '×15' }
 ];
 
 /* ====================================================================
@@ -1641,8 +1655,12 @@ function calcXP(){
   });
   // bonus for streak
   xp += computeStreak() * 10;
-  // bonus for wrong bank cleared
-  xp += Math.max(0, 20 - Object.keys(wrongBank).length) * 5;
+  // бонус за "чистий" банк помилок — рахується, ТІЛЬКИ якщо вже було бодай одне питання квізу,
+  // інакше свіжий акаунт з нуля отримував би дармові +100 XP просто за те, що ще нічого не робив
+  const everAnswered = Object.values(quizStats).some(s => s && s.asked > 0);
+  if(everAnswered){
+    xp += Math.max(0, 20 - Object.keys(wrongBank).length) * 5;
+  }
   // назавжди нараховані бонуси за виконані тижневі челенджі
   xp += bonusXP;
   return xp;
@@ -2074,33 +2092,49 @@ function renderToday(){
   html += '<div class="today-card">';
   html += `<div class="today-day">${WEEKDAYS_FULL[dow]} · ${now.toLocaleDateString('uk-UA')}</div>`;
 
+  const carryOver = getCarryOverItems(now);
+  const carrySubjKeys = carryOver.map(c => c.subj);
+
   const studyKeys = sched.study || [];
+  // спершу — перенесені борги (пріоритет зверху), потім звичайний розклад на сьогодні,
+  // без дублювання: якщо предмет і так вже в сьогоднішньому розкладі — показуємо один рядок з обома позначками
+  const renderSubjectRow = (subjKey, carryFromDate) => {
+    const isReview = subjKey === 'review';
+    const subj = isReview ? null : SUBJECTS[subjKey];
+    const done = entry.study.includes(subjKey);
+    let html2 = `<div class="task-row" ${carryFromDate ? 'style="border-left:3px solid var(--coral);padding-left:9px;"' : ''}>`;
+    html2 += `<div class="checkbox ${done?'checked':''}" data-action="toggle-study" data-subject="${subjKey}"></div>`;
+    html2 += `<div class="task-text">`;
+    if(carryFromDate){
+      html2 += `<div class="today-topic-badge" style="border-color:var(--coral);color:var(--coral);margin-bottom:6px;">⏪ Борг з ${fmtCarryDate(carryFromDate)} — зроби це першим</div>`;
+    }
+    if(isReview){
+      html2 += `<div class="task-title ${done?'done':''}">Повторення / квізи</div>`;
+      html2 += `<div class="task-desc">Неділя — день без нової теми. Перепройди квіз по слабкій темі тижня, повтори, що забулось.</div>`;
+    } else {
+      const nextIdx = subj.curriculum.findIndex((_, i) => !curricula[subjKey] || !curricula[subjKey].includes(i));
+      const topic = nextIdx === -1 ? null : subj.curriculum[nextIdx];
+      html2 += `<div class="task-title ${done?'done':''}">${subj.name} — заняття</div>`;
+      if(topic){
+        html2 += `<div class="today-topic-badge">Сьогодні: ${topic.title}</div>`;
+      } else {
+        html2 += `<div class="today-topic-badge" style="border-color:var(--teal);color:var(--teal)">Усі теми пройдено 🎉</div>`;
+      }
+      html2 += `<div class="task-desc">${subj.desc}</div>`;
+      html2 += `<a class="task-link" href="${subj.links[0].url}" target="_blank" rel="noopener">відкрити курс →</a>`;
+    }
+    html2 += `</div></div>`;
+    return html2;
+  };
+
+  carryOver.forEach(c => { html += renderSubjectRow(c.subj, c.fromDate); });
+
   if(studyKeys.length){
     studyKeys.forEach(subjKey => {
-      const isReview = subjKey === 'review';
-      const subj = isReview ? null : SUBJECTS[subjKey];
-      const done = entry.study.includes(subjKey);
-      html += `<div class="task-row">`;
-      html += `<div class="checkbox ${done?'checked':''}" data-action="toggle-study" data-subject="${subjKey}"></div>`;
-      html += `<div class="task-text">`;
-      if(isReview){
-        html += `<div class="task-title ${done?'done':''}">Повторення / квізи</div>`;
-        html += `<div class="task-desc">Неділя — день без нової теми. Перепройди квіз по слабкій темі тижня, повтори, що забулось.</div>`;
-      } else {
-        const nextIdx = subj.curriculum.findIndex((_, i) => !curricula[subjKey] || !curricula[subjKey].includes(i));
-        const topic = nextIdx === -1 ? null : subj.curriculum[nextIdx];
-        html += `<div class="task-title ${done?'done':''}">${subj.name} — заняття</div>`;
-        if(topic){
-          html += `<div class="today-topic-badge">Сьогодні: ${topic.title}</div>`;
-        } else {
-          html += `<div class="today-topic-badge" style="border-color:var(--teal);color:var(--teal)">Усі теми пройдено 🎉</div>`;
-        }
-        html += `<div class="task-desc">${subj.desc}</div>`;
-        html += `<a class="task-link" href="${subj.links[0].url}" target="_blank" rel="noopener">відкрити курс →</a>`;
-      }
-      html += `</div></div>`;
+      if(carrySubjKeys.includes(subjKey)) return; // вже показано вище як борг — не дублюємо
+      html += renderSubjectRow(subjKey, null);
     });
-  } else if(!sched.buffer){
+  } else if(!sched.buffer && !carryOver.length){
     html += `<div class="empty-note">Сьогодні без навчання за розкладом — день відпочинку від теорії.</div>`;
   }
 
@@ -2122,12 +2156,8 @@ function renderToday(){
 
   html += '</div>';
 
-  // === ПРОПУЩЕНІ ДНІ ===
-  const missedHtml = buildMissedSection(now);
-  if(missedHtml){
-    html += '<div class="panel-title" style="color:var(--coral)">⚠ Пропущено за останні 7 днів</div>';
-    html += '<div class="missed-section">' + missedHtml + '</div>';
-  }
+  const _ms=buildMissedSection(now);
+  if(_ms){ html+='<div class="panel-title" style="color:var(--coral)">⚠ Пропущено за останні 3 дні</div><div class="missed-section">'+_ms+'</div>'; }
 
   html += '<div class="panel-title">Розклад на найближчі 7 днів</div>';
   html += '<div class="week-grid">';
@@ -2179,64 +2209,100 @@ function bindQotdEvents(qotd){
   });
 }
 
-function buildMissedSection(now){
-  const DAYS_UA = ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
-  const MONTHS_UA = ['січня','лютого','березня','квітня','травня','червня',
-                     'липня','серпня','вересня','жовтня','листопада','грудня'];
-  let html = '';
-
-  // Перевіряємо останні 7 днів (виключаючи сьогодні)
-  for(let i=1; i<=7; i++){
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const key = dateKey(d);
-    const sched = getScheduleForDate(d);
-    const entry = history[key];
-
-    // Що мало бути зроблено цього дня
-    const requiredStudy = (sched.study || []).filter(s => s !== 'review');
-    const requiredWorkout = sched.workout && !sched.buffer;
-
-    if(!requiredStudy.length && !requiredWorkout) continue; // вихідний чи буфер — не рахуємо
-    if(sched.buffer) continue;
-
-    // Що НЕ було зроблено
-    const doneStudy = entry ? (entry.study || []) : [];
-    const doneWorkout = entry ? entry.workout : false;
-    const excused = entry ? entry.excused : false;
-
-    if(excused) continue; // день був відмічений "не встиг" — не показуємо
-
-    const missedStudy = requiredStudy.filter(sk => !doneStudy.includes(sk));
-    const missedWorkout = requiredWorkout && !doneWorkout;
-
-    if(!missedStudy.length && !missedWorkout) continue; // все зроблено — ок
-
-    // Є пропуски — будуємо картку
-    const dayName = DAYS_UA[d.getDay()];
-    const dateStr = `${d.getDate()} ${MONTHS_UA[d.getMonth()]}`;
-    const missedCount = missedStudy.length + (missedWorkout ? 1 : 0);
-
-    html += `<div class="missed-day">`;
-    html += `<div class="missed-day-head">`;
-    html += `<span class="missed-day-date">${dayName} · ${dateStr}</span>`;
-    html += `<span class="missed-badge">${missedCount} не виконано</span>`;
-    html += `</div>`;
-    html += `<div class="missed-items">`;
-
-    missedStudy.forEach(sk => {
-      const name = SUBJECTS[sk] ? SUBJECTS[sk].name : sk;
-      html += `<span class="missed-item study-item">📘 ${name}</span>`;
-    });
-    if(missedWorkout){
-      html += `<span class="missed-item workout-item">💪 Тренування</span>`;
+// Борг з минулих днів: предмет, який був запланований, але не відмічений,
+// і відтоді жодного разу не закривався — "чіпляється" зверху сьогоднішнього списку,
+// поки не буде відмічений (чесний пропуск дня гасить борг, а не накопичує його)
+function getCarryOverItems(now){
+  const sdRaw = store.get('startDate');
+  const startDate = sdRaw ? sdRaw.value : null;
+  const todayK = dateKey(now);
+  const items = [];
+  Object.keys(SUBJECTS).forEach(subjKey => {
+    const subj = SUBJECTS[subjKey];
+    const hasUnfinished = subj.curriculum.some((item, idx) => !curricula[subjKey] || !curricula[subjKey].includes(idx));
+    if(!hasUnfinished) return; // предмет вже повністю пройдено — переносити нічого
+    let missedFrom = null;
+    for(let i=14; i>=1; i--){
+      const d = new Date(now); d.setDate(d.getDate()-i);
+      const key = dateKey(d);
+      if(startDate && key < startDate) continue; // не дивимось раніше офіційного старту/скидання
+      const sched = getScheduleForDate(d);
+      if(sched.buffer || !(sched.study||[]).includes(subjKey)) continue;
+      const entry = history[key];
+      if(entry && entry.excused){ missedFrom = null; continue; } // чесний пропуск гасить борг
+      const doneThatDay = entry && entry.study && entry.study.includes(subjKey);
+      if(doneThatDay) missedFrom = null;
+      else if(missedFrom === null) missedFrom = key;
     }
+    const todayEntry = history[todayK];
+    const doneToday = todayEntry && todayEntry.study && todayEntry.study.includes(subjKey);
+    if(missedFrom && !doneToday) items.push({ subj: subjKey, fromDate: missedFrom });
+  });
+  return items;
+}
+function fmtCarryDate(key){
+  const MO=['січ','лют','бер','квіт','трав','черв','лип','серп','вер','жовт','лист','груд'];
+  const [y,m,d] = key.split('-').map(Number);
+  return `${d} ${MO[m-1]}`;
+}
 
-    html += `</div>`;
-    html += `</div>`;
+function buildMissedSection(now){
+  const DA=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const MO=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  const sdRaw = store.get('startDate');
+  const startDate = sdRaw ? sdRaw.value : null;
+  let html='';
+  for(let i=1;i<=3;i++){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    // Не показуємо дні до дати початку
+    if(startDate && key < startDate) continue;
+    const sched=getScheduleForDate(d);
+    const entry=history[key];
+    const reqStudy=(sched.study||[]).filter(s=>s!=='review');
+    const reqWorkout=sched.workout&&!sched.buffer;
+    if(sched.buffer||(!reqStudy.length&&!reqWorkout)) continue;
+    const doneStudy=entry?(entry.study||[]):[];
+    const doneWorkout=entry?entry.workout:false;
+    if(entry&&entry.excused) continue;
+    const missStudy=reqStudy.filter(sk=>!doneStudy.includes(sk));
+    const missWorkout=reqWorkout&&!doneWorkout;
+    if(!missStudy.length&&!missWorkout) continue;
+    const cnt=missStudy.length+(missWorkout?1:0);
+    html+=`<div class="missed-day"><div class="missed-day-head"><span class="missed-day-date">${DA[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]}</span><span class="missed-badge">${cnt} не виконано</span></div><div class="missed-items">`;
+    missStudy.forEach(sk=>{ html+=`<span class="missed-item study-item">📘 ${SUBJECTS[sk]?SUBJECTS[sk].name:sk}</span>`; });
+    if(missWorkout) html+=`<span class="missed-item workout-item">💪 Тренування</span>`;
+    html+=`</div></div>`;
   }
-
   return html;
+}
+
+async function resetAllProgress(){
+  ['history','curricula','quizStats','taskAnswers','wrongBank','deadlineOverrides',
+   'notes','topicLog','bonusXP','qotdState','weeklyClaim','dailyXPBaseline',
+   'recordDayXP','prog_migrated_v2','achievements'].forEach(k=>store.remove(k));
+  // Оновлюємо стартову дату на сьогодні
+  const _rd=new Date();
+  store.set('startDate', _rd.getFullYear()+'-'+String(_rd.getMonth()+1).padStart(2,'0')+'-'+String(_rd.getDate()).padStart(2,'0'));
+  history={}; curricula={math:[],prog:[],eng:[],highmath:[],discrete:[],cs:[],logic:[],arch:[]};
+  quizStats={}; taskAnswers={}; wrongBank={}; notes={}; topicLog=[]; bonusXP=0;
+  try{ qotdState={date:null,correct:null}; }catch(e){}
+  try{ deadlineOverrides={}; }catch(e){}
+  try{ recordDayXP=0; }catch(e){}
+  await saveCurricula();
+  document.getElementById('confirmOverlay').classList.remove('show');
+  const sp=document.getElementById('sidePanel'); if(sp) sp.classList.remove('open');
+  const so=document.getElementById('sideOverlay'); if(so) so.classList.remove('show');
+  switchTab('today');
+}
+
+function bindResetBtn(){
+  const btn=document.getElementById('resetProgressBtn');
+  if(btn) btn.onclick=()=>document.getElementById('confirmOverlay').classList.add('show');
+  const yes=document.getElementById('confirmYes');
+  if(yes) yes.onclick=resetAllProgress;
+  const no=document.getElementById('confirmNo');
+  if(no) no.onclick=()=>document.getElementById('confirmOverlay').classList.remove('show');
 }
 
 function weekRowHtml(d, isToday){
@@ -2794,14 +2860,20 @@ function renderProgress(){
 
   html += `<div class="overall-progress"><div class="overall-progress-head"><span>Весь план (усі предмети)</span><span>${allDone}/${allTotal} · ${allPct}%</span></div><div class="mini-track" style="width:100%;height:8px;"><div class="mini-fill" style="width:${allPct}%; background:var(--amber)"></div></div></div>`;
 
-  // Pace badges
-  const paces = calcPace();
-  if(paces.length){
-    html += '<div class="pace-row"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted);">Темп:</span>';
-    paces.forEach(p => {
-      html += `<span style="font-size:11px;color:var(--muted);">${p.name}</span>${paceBadgeHtml(p.diff)}`;
-    });
-    html += '</div>';
+  // Pace badges — не показуємо тривожні "відстаєш", якщо взагалі ще жодної теми не пройдено:
+  // на нульовому прогресі це не корисна інформація, а лише плутанина одразу після старту/скидання
+  const totalEverDone = Object.keys(SUBJECTS).reduce((sum, k) => sum + (curricula[k] ? curricula[k].length : 0), 0);
+  if(totalEverDone === 0){
+    html += `<div class="pace-row"><span style="font-size:11px;color:var(--muted);">Темп: ще не пройдено жодної теми — темп порахується, щойно почнеш</span></div>`;
+  } else {
+    const paces = calcPace();
+    if(paces.length){
+      html += '<div class="pace-row"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted);">Темп:</span>';
+      paces.forEach(p => {
+        html += `<span style="font-size:11px;color:var(--muted);">${p.name}</span>${paceBadgeHtml(p.diff)}`;
+      });
+      html += '</div>';
+    }
   }
 
   html += '<div class="streak-row">';
@@ -2889,6 +2961,10 @@ function renderProgress(){
   html += '</div>';
   html += '<div class="hint">Експорт зберігає весь прогрес (теми, історію днів, статистику квізів, відповіді, дедлайни, нотатки) у файл .json. Імпортуй цей файл на іншому пристрої або після очищення браузера — і прогрес повернеться.</div>';
 
+  html += '<div class="panel-title" style="color:var(--coral);">⚠ Небезпечна зона</div>';
+  html += '<button class="task-check-btn" id="resetAllBtn" style="width:100%; border-color:var(--coral); color:var(--coral);">🗑 Скинути все і почати спочатку</button>';
+  html += '<div class="hint">Видаляє АБСОЛЮТНО все на цьому пристрої: весь пройдений прогрес, нік і пароль входу, ачивки, нотатки, налаштування звуку. Після цього застосунок перезавантажиться і покаже екран реєстрації ніку, як при першому запуску. Це незворотно — якщо хочеш зберегти поточний прогрес, спочатку натисни "Експортувати у файл" вище.</div>';
+
   document.getElementById('bodyArea').innerHTML = html;
   bindProgressEvents();
 }
@@ -2937,6 +3013,14 @@ function shareProgress(){
 }
 
 function bindProgressEvents(){
+  const resetAllBtn = document.getElementById('resetAllBtn');
+  if(resetAllBtn) resetAllBtn.addEventListener('click', () => {
+    resetAllBtn.disabled = true;
+    resetAllBtn.textContent = '🗑 Скидаю все...';
+    try{ localStorage.clear(); }catch(e){ console.error('Не вдалося очистити localStorage', e); }
+    try{ sessionStorage.clear(); }catch(e){}
+    setTimeout(() => { location.reload(); }, 300);
+  });
   const exportBtn = document.getElementById('exportBtn');
   if(exportBtn) exportBtn.addEventListener('click', () => {
     const payload = { exportedAt: new Date().toISOString(), history, curricula, quizStats, taskAnswers, wrongBank, deadlineOverrides, notes };
@@ -3892,6 +3976,11 @@ document.getElementById('nickSaveBtn').addEventListener('click', async()=>{
 
   nickname = candidateNick;
   await saveNickname();
+  // Зберігаємо дату початку (тільки якщо ще не встановлена)
+  if(!store.get('startDate')){
+    const _sd = new Date();
+    store.set('startDate', _sd.getFullYear()+'-'+String(_sd.getMonth()+1).padStart(2,'0')+'-'+String(_sd.getDate()).padStart(2,'0'));
+  }
   document.getElementById('loginScreenNick').style.display='none';
   document.getElementById('loginScreenPin').style.display='';
 
@@ -3921,5 +4010,15 @@ document.getElementById('nickInput').addEventListener('keydown',e=>{
 
 </script>
 
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card">
+    <h3>⚠ Скинути прогрес?</h3>
+    <p>Весь прогрес тем, квізів, серія, XP — все видалиться.<br>Нік і пароль залишаться.<br><br><strong>Це незворотньо.</strong></p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="confirmNo">Скасувати</button>
+      <button class="confirm-yes" id="confirmYes">Так, скинути</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
