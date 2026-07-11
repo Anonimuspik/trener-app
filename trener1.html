@@ -143,7 +143,11 @@
   }
   .curr-checkbox.checked{ background: var(--teal); border-color: var(--teal); }
   .curr-checkbox.checked::after{ content:'✓'; color: #0b0f1a; font-size: 11px; font-weight: 700; }
-  .curr-checkbox.locked{ opacity: 0.35; cursor: not-allowed; }
+  .curr-checkbox.locked{ opacity: 0.3; cursor: not-allowed; border-color: var(--line) !important; }
+  .curr-item-wrap.seq-locked{ opacity: 0.38; pointer-events: none; }
+  .curr-item-wrap.seq-locked .quiz-pill{ display: none; }
+  .curr-item-wrap.seq-locked .note-toggle{ display: none; }
+  .seq-lock-icon{ font-size: 11px; color: var(--muted); margin-left: 5px; }
   .curr-text{ font-size: 13.5px; flex:1; }
   .curr-text.done{ color: var(--muted); text-decoration: line-through; }
   .quiz-pill{
@@ -2409,14 +2413,17 @@ function renderStudy(){
     html += `</div>`;
     subj.curriculum.forEach((item, idx) => {
       const checked = curricula[key] && curricula[key].includes(idx);
+      // Блокуємо тему якщо попередня не пройдена
+      const prevDone = idx === 0 || (curricula[key] && curricula[key].includes(idx - 1));
+      const isLocked = !checked && !prevDone;
       const dl = effectiveDeadline(key, idx, item);
       const dlStatus = checked ? '' : deadlineStatus(dl);
       const noteKey = `${key}-${idx}`;
       const hasNote = !!(notes[noteKey] && notes[noteKey].trim());
-      html += `<div class="curr-item-wrap">`;
+      html += `<div class="curr-item-wrap ${isLocked ? 'seq-locked' : ''}">`;
       html += `<div class="curr-item">`;
-      html += `<div class="curr-checkbox ${checked?'checked':''}" data-subject="${key}" data-idx="${idx}"></div>`;
-      html += `<div class="curr-text ${checked?'done':''}">${item.title}`;
+      html += `<div class="curr-checkbox ${checked?'checked':isLocked?'locked':''}" data-subject="${key}" data-idx="${idx}" ${isLocked?'data-locked="1"':''}></div>`;
+      html += `<div class="curr-text ${checked?'done':''}">${isLocked ? '🔒 ' : ''}${item.title}`;
       if(dl) html += ` <span class="deadline-pill ${dlStatus}" data-deadline-edit data-subject="${key}" data-idx="${idx}" title="клікни щоб змінити дедлайн">до ${fmtDeadline(dl)} ✎</span>`;
       html += `</div>`;
       if(item.quizzes){
@@ -2523,6 +2530,14 @@ function bindStudyEvents(){
   document.querySelectorAll('.curr-checkbox').forEach(el => {
     el.addEventListener('click', async (e) => {
       e.stopPropagation();
+      if(el.dataset.locked === '1'){
+        const subj = el.dataset.subject;
+        const idx = parseInt(el.dataset.idx, 10);
+        const prevTitle = SUBJECTS[subj] && SUBJECTS[subj].curriculum[idx-1]
+          ? SUBJECTS[subj].curriculum[idx-1].title : 'попередню тему';
+        showInfoMsg('🔒 Спочатку пройди: «' + prevTitle + '»');
+        return;
+      }
       playClick();
       const subj = el.dataset.subject;
       const idx = parseInt(el.dataset.idx, 10);
@@ -3635,8 +3650,8 @@ function renderLeaderboard(players){
     html += `<span class="rating-lvl">${p.level||''}</span>`;
     html += `<span class="rating-xp">${p.xp||0} XP</span>`;
     html += `</div>`;
-    if(rank===1) html += `<div class="rating-caption">трон знайшов свого царя</div>`;
-    else if(rank===2) html += `<div class="rating-caption">колись я підіймусь вище, але не зараз</div>`;
+    if(rank===1) html += `<div class="rating-caption">Снизу нищета</div>`;
+    else if(rank===2) html += `<div class="rating-caption">колись я підіймусь вище, а пока что я нищий</div>`;
     html += `</div>`;
   });
   document.getElementById('ratingList').innerHTML = html || '<div class="empty-note">Поки що тут нікого немає.</div>';
@@ -4007,6 +4022,20 @@ document.getElementById('nickInput').addEventListener('keydown',e=>{
   if(e.key==='Enter') document.getElementById('nickSaveBtn').click();
 });
 
+
+function showInfoMsg(txt){
+  let el = document.getElementById('infoMsgBox');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'infoMsgBox';
+    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--amber);border-radius:8px;padding:10px 18px;font-family:Consolas,monospace;font-size:13px;color:var(--amber);z-index:9990;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = txt;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.opacity='0'; }, 2500);
+}
 
 </script>
 
