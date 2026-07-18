@@ -1450,7 +1450,7 @@ let deadlineOverrides = {}; // { "subj-idx": "YYYY-MM-DD" } — вручну з�
 let notes = {}; // { "subj-idx": "текст нотатки" }
 let dataReady = false;
 let firedToday = {};
-let soundEnabled = false;
+let soundEnabled = true;
 let sfxEnabled = true; // окремий тумблер: звуки подій (клік/квіз/тема/рівень)
 let lastLevelLabel = null;
 let nickname = null; // нік для рейтингу з друзями
@@ -3281,7 +3281,7 @@ function beepOnce(){
   const gain = audioCtx.createGain();
   osc.type = 'sine'; osc.frequency.value = 880;
   gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.75, audioCtx.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(); osc.stop(audioCtx.currentTime + 0.4);
@@ -3339,6 +3339,7 @@ document.querySelectorAll('.tab').forEach(tab => {
   checkAchievements();
   switchTab('today');
   updateClock();
+  try{ initAudio(); }catch(e){ soundEnabled = false; } // в Electron спрацює одразу; у звичайному браузері може знадобитись клік
   showNickModalIfNeeded();
 })();
 
