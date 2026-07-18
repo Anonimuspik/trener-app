@@ -2105,9 +2105,15 @@ function renderToday(){
   const renderSubjectRow = (subjKey, carryFromDate) => {
     const isReview = subjKey === 'review';
     const subj = isReview ? null : SUBJECTS[subjKey];
-    const done = entry.study.includes(subjKey);
+    const done = carryFromDate
+      ? !!(history[carryFromDate] && history[carryFromDate].study && history[carryFromDate].study.includes(subjKey))
+      : entry.study.includes(subjKey);
     let html2 = `<div class="task-row" ${carryFromDate ? 'style="border-left:3px solid var(--coral);padding-left:9px;"' : ''}>`;
-    html2 += `<div class="checkbox ${done?'checked':''}" data-action="toggle-study" data-subject="${subjKey}"></div>`;
+    if(carryFromDate){
+      html2 += `<div class="checkbox ${done?'checked':''}" data-action="toggle-study-date" data-subject="${subjKey}" data-date="${carryFromDate}"></div>`;
+    } else {
+      html2 += `<div class="checkbox ${done?'checked':''}" data-action="toggle-study" data-subject="${subjKey}"></div>`;
+    }
     html2 += `<div class="task-text">`;
     if(carryFromDate){
       html2 += `<div class="today-topic-badge" style="border-color:var(--coral);color:var(--coral);margin-bottom:6px;">⏪ Борг з ${fmtCarryDate(carryFromDate)} — зроби це першим</div>`;
@@ -2219,11 +2225,8 @@ function bindQotdEvents(qotd){
 function getCarryOverItems(now){
   const sdRaw = store.get('startDate');
   const startDate = sdRaw ? sdRaw.value : null;
-  const todayK = dateKey(now);
   const items = [];
   Object.keys(SUBJECTS).forEach(subjKey => {
-    const subj = SUBJECTS[subjKey];
-    let missedFrom = null;
     for(let i=14; i>=1; i--){
       const d = new Date(now); d.setDate(d.getDate()-i);
       const key = dateKey(d);
@@ -2231,15 +2234,12 @@ function getCarryOverItems(now){
       const sched = getScheduleForDate(d);
       if(sched.buffer || !(sched.study||[]).includes(subjKey)) continue;
       const entry = history[key];
-      if(entry && entry.excused){ missedFrom = null; continue; } // чесний пропуск гасить борг
+      if(entry && entry.excused) continue; // чесний пропуск гасить борг за цей конкретний день
       const doneThatDay = entry && entry.study && entry.study.includes(subjKey);
-      if(doneThatDay) missedFrom = null;
-      else if(missedFrom === null) missedFrom = key;
+      if(!doneThatDay) items.push({ subj: subjKey, fromDate: key }); // окремий борг за кожен пропущений день
     }
-    const todayEntry = history[todayK];
-    const doneToday = todayEntry && todayEntry.study && todayEntry.study.includes(subjKey);
-    if(missedFrom && !doneToday) items.push({ subj: subjKey, fromDate: missedFrom });
   });
+  items.sort((a, b) => a.fromDate < b.fromDate ? -1 : a.fromDate > b.fromDate ? 1 : 0);
   return items;
 }
 function fmtCarryDate(key){
@@ -2331,6 +2331,19 @@ function bindTodayEvents(){
       playClick();
       const subjKey = el.dataset.subject;
       const key = todayKey();
+      const entry = getDay(key);
+      const pos = entry.study.indexOf(subjKey);
+      if(pos === -1) entry.study.push(subjKey);
+      else entry.study.splice(pos, 1);
+      await saveHistory();
+      renderToday();
+    });
+  });
+  document.querySelectorAll('[data-action="toggle-study-date"]').forEach(el => {
+    el.addEventListener('click', async () => {
+      playClick();
+      const subjKey = el.dataset.subject;
+      const key = el.dataset.date;
       const entry = getDay(key);
       const pos = entry.study.indexOf(subjKey);
       if(pos === -1) entry.study.push(subjKey);
