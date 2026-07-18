@@ -2223,8 +2223,6 @@ function getCarryOverItems(now){
   const items = [];
   Object.keys(SUBJECTS).forEach(subjKey => {
     const subj = SUBJECTS[subjKey];
-    const hasUnfinished = subj.curriculum.some((item, idx) => !curricula[subjKey] || !curricula[subjKey].includes(idx));
-    if(!hasUnfinished) return; // предмет вже повністю пройдено — переносити нічого
     let missedFrom = null;
     for(let i=14; i>=1; i--){
       const d = new Date(now); d.setDate(d.getDate()-i);
